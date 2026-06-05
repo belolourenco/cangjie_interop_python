@@ -1,0 +1,13 @@
+[package]
+  cjc-version = "0.0.1"
+  name = "interop_python"
+  description = "Cangjie library for calling Python from Cangjie"
+  version = "0.1.0"
+  target-dir = ""
+  output-type = "static"
+  compile-option = ""
+  override-compile-option = ""
+  link-option = ""
+  package-configuration = {}
+
+[dependencies]

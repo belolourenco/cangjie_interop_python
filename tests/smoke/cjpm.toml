@@ -1,0 +1,14 @@
+[package]
+  cjc-version = "0.0.1"
+  name = "smoke"
+  description = "Smoke checks for the Python runtime"
+  version = "0.1.0"
+  target-dir = ""
+  output-type = "executable"
+  compile-option = "--set-runtime-rpath"
+  override-compile-option = ""
+  link-option = "-L ../../build/native -lpython_bridge -L/opt/homebrew/opt/python@3.14/Frameworks/Python.framework/Versions/3.14/lib/python3.14/config-3.14-darwin -lpython3.14 -ldl -framework CoreFoundation"
+  package-configuration = {}
+
+[dependencies]
+  interop_python = { path = "../.." }

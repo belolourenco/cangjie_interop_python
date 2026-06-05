@@ -1,0 +1,24 @@
+target/
+build-script-cache/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.python-version
+.ipynb_checkpoints/
+.mypy_cache/
+.dmypy.json
+.pytype/
+.pyre/
+cython_debug/
+*.so
+*.egg
+*.egg-info/
+pip-wheel-metadata/
+*.manifest
+*.spec
+*.log
+*.sqlite3
+*.sqlite3-journal
