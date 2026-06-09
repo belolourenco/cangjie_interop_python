@@ -1,0 +1,14 @@
+[package]
+  cjc-version = "0.0.1"
+  name = "extern_with_modules"
+  description = "Module checks for the Python runtime"
+  version = "0.1.0"
+  target-dir = ""
+  output-type = "executable"
+  compile-option = "--set-runtime-rpath"
+  override-compile-option = ""
+  link-option = "-L ../../build/native -lpython_bridge -lpython3.12 -ldl"
+  package-configuration = {}
+
+[dependencies]
+  interop_python = { path = "../.." }
