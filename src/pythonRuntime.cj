@@ -2,33 +2,33 @@ package interop_python
 
 import std.math.numeric.BigInt
 
-foreign func runtime_create(): CPointer<Unit>
-foreign func runtime_destroy(handle: CPointer<Unit>): Unit
-foreign func runtime_last_error(handle: CPointer<Unit>): CString
-foreign func runtime_enable_std_module(handle: CPointer<Unit>): Int64
+foreign func py_runtime_create(): CPointer<Unit>
+foreign func py_runtime_destroy(handle: CPointer<Unit>): Unit
+foreign func py_runtime_last_error(handle: CPointer<Unit>): CString
+foreign func py_runtime_enable_std_module(handle: CPointer<Unit>): Int64
 
-foreign func runtime_eval_value(handle: CPointer<Unit>, source: CString): CPointer<Unit>
-foreign func runtime_get_global_property(handle: CPointer<Unit>, name: CString): CPointer<Unit>
-foreign func runtime_new_bool(handle: CPointer<Unit>, value: Int64): CPointer<Unit>
-foreign func runtime_new_number(handle: CPointer<Unit>, value: Float64): CPointer<Unit>
-foreign func runtime_new_integer(handle: CPointer<Unit>, value: CString): CPointer<Unit>
-foreign func runtime_new_string(handle: CPointer<Unit>, value: CString): CPointer<Unit>
-foreign func runtime_import_module(handle: CPointer<Unit>, path: CString): CPointer<Unit>
+foreign func py_runtime_eval_value(handle: CPointer<Unit>, source: CString): CPointer<Unit>
+foreign func py_runtime_get_global_property(handle: CPointer<Unit>, name: CString): CPointer<Unit>
+foreign func py_runtime_new_bool(handle: CPointer<Unit>, value: Int64): CPointer<Unit>
+foreign func py_runtime_new_number(handle: CPointer<Unit>, value: Float64): CPointer<Unit>
+foreign func py_runtime_new_integer(handle: CPointer<Unit>, value: CString): CPointer<Unit>
+foreign func py_runtime_new_string(handle: CPointer<Unit>, value: CString): CPointer<Unit>
+foreign func py_runtime_import_module(handle: CPointer<Unit>, path: CString): CPointer<Unit>
 
-foreign func value_destroy(handle: CPointer<Unit>): Unit
-foreign func value_kind(handle: CPointer<Unit>): Int64
-foreign func value_to_bool(handle: CPointer<Unit>): Int64
-foreign func value_to_number(handle: CPointer<Unit>): Float64
-foreign func value_to_string(handle: CPointer<Unit>): CString
-foreign func bridge_free_string(value: CString): Unit
-foreign func value_is_array(handle: CPointer<Unit>): Int64
-foreign func value_array_length(handle: CPointer<Unit>): Int64
-foreign func value_get_property(handle: CPointer<Unit>, name: CString): CPointer<Unit>
-foreign func value_set_property(handle: CPointer<Unit>, name: CString, value: CPointer<Unit>): Int64
-foreign func value_get_index(handle: CPointer<Unit>, index: Int64): CPointer<Unit>
-foreign func value_set_index(handle: CPointer<Unit>, index: Int64, value: CPointer<Unit>): Int64
-foreign func value_call(function: CPointer<Unit>, thisValue: CPointer<Unit>, args: CPointer<CPointer<Unit>>, numArgs: Int32): CPointer<Unit>
-foreign func value_construct(function: CPointer<Unit>, args: CPointer<CPointer<Unit>>, numArgs: Int32): CPointer<Unit>
+foreign func py_value_destroy(handle: CPointer<Unit>): Unit
+foreign func py_value_kind(handle: CPointer<Unit>): Int64
+foreign func py_value_to_bool(handle: CPointer<Unit>): Int64
+foreign func py_value_to_number(handle: CPointer<Unit>): Float64
+foreign func py_value_to_string(handle: CPointer<Unit>): CString
+foreign func py_bridge_free_string(value: CString): Unit
+foreign func py_value_is_array(handle: CPointer<Unit>): Int64
+foreign func py_value_array_length(handle: CPointer<Unit>): Int64
+foreign func py_value_get_property(handle: CPointer<Unit>, name: CString): CPointer<Unit>
+foreign func py_value_set_property(handle: CPointer<Unit>, name: CString, value: CPointer<Unit>): Int64
+foreign func py_value_get_index(handle: CPointer<Unit>, index: Int64): CPointer<Unit>
+foreign func py_value_set_index(handle: CPointer<Unit>, index: Int64, value: CPointer<Unit>): Int64
+foreign func py_value_call(function: CPointer<Unit>, thisValue: CPointer<Unit>, args: CPointer<CPointer<Unit>>, numArgs: Int32): CPointer<Unit>
+foreign func py_value_construct(function: CPointer<Unit>, args: CPointer<CPointer<Unit>>, numArgs: Int32): CPointer<Unit>
 
 private let pythonValueBoolKind: Int64 = 2
 private let pythonValueNumberKind: Int64 = 3
@@ -38,7 +38,7 @@ private let pythonValueObjectKind: Int64 = 6
 private let pythonValueCallableKind: Int64 = 7
 
 private func createRuntime(): CPointer<Unit> {
-    let handle = unsafe { runtime_create() }
+    let handle = unsafe { py_runtime_create() }
     if (handle.isNull()) {
         throw ExternDynamicException("failed to create Python runtime")
     }
@@ -60,12 +60,12 @@ private func ownedCStringToString(value: CString): String {
     }
 
     let result = value.toString()
-    unsafe { bridge_free_string(value) }
+    unsafe { py_bridge_free_string(value) }
     result
 }
 
 private func runtimeError(runtime: CPointer<Unit>): String {
-    unsafe { runtime_last_error(runtime).toString() }
+    unsafe { py_runtime_last_error(runtime).toString() }
 }
 
 private func valueFromRuntimeHandle(runtime: CPointer<Unit>, value: CPointer<Unit>): CPointer<Unit> {
@@ -100,7 +100,7 @@ private class PythonRuntimeRef {
     }
 
     ~init() {
-        unsafe { runtime_destroy(handle) }
+        unsafe { py_runtime_destroy(handle) }
     }
 }
 
@@ -116,7 +116,7 @@ private class PythonValueRef {
     }
 
     ~init() {
-        unsafe { value_destroy(handle) }
+        unsafe { py_value_destroy(handle) }
     }
 }
 
@@ -159,7 +159,7 @@ private func valueKind(value: CPointer<Unit>): Int64 {
         throw ExternDynamicException("Python value handle must not be null")
     }
 
-    unsafe { value_kind(value) }
+    unsafe { py_value_kind(value) }
 }
 
 private func valueIsBool(value: CPointer<Unit>): Bool {
@@ -187,7 +187,7 @@ private func valueIsCallable(value: CPointer<Unit>): Bool {
 }
 
 private func valueIsArray(value: CPointer<Unit>): Bool {
-    unsafe { value_is_array(value) != 0 }
+    unsafe { py_value_is_array(value) != 0 }
 }
 
 private func valueAsBool(value: CPointer<Unit>): Bool {
@@ -195,7 +195,7 @@ private func valueAsBool(value: CPointer<Unit>): Bool {
         throw ExternConversionException("Python value is not a boolean")
     }
 
-    unsafe { value_to_bool(value) != 0 }
+    unsafe { py_value_to_bool(value) != 0 }
 }
 
 private func valueAsFloat64(value: CPointer<Unit>): Float64 {
@@ -203,7 +203,7 @@ private func valueAsFloat64(value: CPointer<Unit>): Float64 {
         throw ExternConversionException("Python value is not a number")
     }
 
-    unsafe { value_to_number(value) }
+    unsafe { py_value_to_number(value) }
 }
 
 private func valueAsString(value: CPointer<Unit>): String {
@@ -211,7 +211,7 @@ private func valueAsString(value: CPointer<Unit>): String {
         throw ExternConversionException("Python value is not a string")
     }
 
-    ownedCStringToString(unsafe { value_to_string(value) })
+    ownedCStringToString(unsafe { py_value_to_string(value) })
 }
 
 private func getProperty(value: CPointer<Unit>, name: String): CPointer<Unit> {
@@ -220,7 +220,7 @@ private func getProperty(value: CPointer<Unit>, name: String): CPointer<Unit> {
     }
 
     let cName = unsafe { LibC.mallocCString(name) }
-    let result = unsafe { value_get_property(value, cName) }
+    let result = unsafe { py_value_get_property(value, cName) }
     unsafe { LibC.free(cName) }
     if (result.isNull()) {
         throw ExternDynamicException("failed to read Python property")
@@ -235,7 +235,7 @@ private func setProperty(target: CPointer<Unit>, name: String, value: CPointer<U
     }
 
     let cName = unsafe { LibC.mallocCString(name) }
-    let status = unsafe { value_set_property(target, cName, value) }
+    let status = unsafe { py_value_set_property(target, cName, value) }
     unsafe { LibC.free(cName) }
     if (status != 0) {
         throw ExternDynamicException("failed to write Python property")
@@ -247,12 +247,12 @@ private func getIndex(value: CPointer<Unit>, index: Int64): CPointer<Unit> {
         throw ExternDynamicException("Expected Python sequence")
     }
 
-    let length = unsafe { value_array_length(value) }
+    let length = unsafe { py_value_array_length(value) }
     if (index < 0 || index >= length) {
         throw ExternDynamicException("Python sequence index is out of range")
     }
 
-    let result = unsafe { value_get_index(value, index) }
+    let result = unsafe { py_value_get_index(value, index) }
     if (result.isNull()) {
         throw ExternDynamicException("failed to read Python sequence index")
     }
@@ -265,12 +265,12 @@ private func setIndex(target: CPointer<Unit>, index: Int64, value: CPointer<Unit
         throw ExternDynamicException("Expected Python sequence")
     }
 
-    let length = unsafe { value_array_length(target) }
+    let length = unsafe { py_value_array_length(target) }
     if (index < 0 || index >= length) {
         throw ExternDynamicException("Python sequence index is out of range")
     }
 
-    let status = unsafe { value_set_index(target, index, value) }
+    let status = unsafe { py_value_set_index(target, index, value) }
     if (status != 0) {
         throw ExternDynamicException("failed to write Python sequence index")
     }
@@ -365,7 +365,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
 
     private static func toPythonInteger(value: String): PythonValueRef {
         let cValue = unsafe { LibC.mallocCString(value) }
-        let handle = unsafe { runtime_new_integer(runtime, cValue) }
+        let handle = unsafe { py_runtime_new_integer(runtime, cValue) }
         unsafe { LibC.free(cValue) }
         PythonValueRef(valueFromRuntimeHandle(runtime, handle))
     }
@@ -395,16 +395,16 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
             case i: BigInt =>
                 toPythonInteger("${i}")
             case f: Float16 =>
-                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { runtime_new_number(runtime, Float64(f)) }))
+                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { py_runtime_new_number(runtime, Float64(f)) }))
             case f: Float32 =>
-                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { runtime_new_number(runtime, Float64(f)) }))
+                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { py_runtime_new_number(runtime, Float64(f)) }))
             case f: Float64 =>
-                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { runtime_new_number(runtime, f) }))
+                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { py_runtime_new_number(runtime, f) }))
             case b: Bool =>
-                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { runtime_new_bool(runtime, boolAsInt64(b)) }))
+                PythonValueRef(valueFromRuntimeHandle(runtime, unsafe { py_runtime_new_bool(runtime, boolAsInt64(b)) }))
             case s: String =>
                 let cValue = unsafe { LibC.mallocCString(s) }
-                let handle = unsafe { runtime_new_string(runtime, cValue) }
+                let handle = unsafe { py_runtime_new_string(runtime, cValue) }
                 unsafe { LibC.free(cValue) }
                 PythonValueRef(valueFromRuntimeHandle(runtime, handle))
             case _ => throw ExternConversionException("Unsupported type by PythonRuntime")
@@ -424,7 +424,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
         unsafe {
             let rawNativeArgs = acquireArrayRawData(nativeArgs)
             try {
-                let result = valueFromCallHandle(runtime, value_call(function.pointer(), receiver.pointer(), rawNativeArgs.pointer, Int32(args.size)))
+                let result = valueFromCallHandle(runtime, py_value_call(function.pointer(), receiver.pointer(), rawNativeArgs.pointer, Int32(args.size)))
                 releaseArrayRawData(rawNativeArgs)
                 return result
             } catch (e: Exception) {
@@ -436,7 +436,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
 
     public static func evalScript(source: String): Extern<PythonRuntime> {
         let cSource = unsafe { LibC.mallocCString(source) }
-        let value = unsafe { runtime_eval_value(runtime, cSource) }
+        let value = unsafe { py_runtime_eval_value(runtime, cSource) }
         unsafe { LibC.free(cSource) }
         if (value.isNull()) {
             throw ExternDynamicException(runtimeError(runtime))
@@ -446,7 +446,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
     }
 
     public static func enableStdModule(): Unit {
-        let status = unsafe { runtime_enable_std_module(runtime) }
+        let status = unsafe { py_runtime_enable_std_module(runtime) }
         if (status != 0) {
             throw ExternDynamicException(runtimeError(runtime))
         }
@@ -454,7 +454,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
 
     public static func globalAccess(name: String): Extern<PythonRuntime> {
         let cName = unsafe { LibC.mallocCString(name) }
-        let value = unsafe { runtime_get_global_property(runtime, cName) }
+        let value = unsafe { py_runtime_get_global_property(runtime, cName) }
         unsafe { LibC.free(cName) }
         if (value.isNull()) {
             throw ExternDynamicException(runtimeError(runtime))
@@ -465,7 +465,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
 
     public static func getModule(moduleName: String): Extern<PythonRuntime> {
         let cPath = unsafe { LibC.mallocCString(moduleName) }
-        let namespace = unsafe { runtime_import_module(runtime, cPath) }
+        let namespace = unsafe { py_runtime_import_module(runtime, cPath) }
         unsafe { LibC.free(cPath) }
         if (namespace.isNull()) {
             throw ExternDynamicException(runtimeError(runtime))

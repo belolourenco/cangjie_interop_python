@@ -23,7 +23,7 @@ struct module_cache_entry {
     struct module_cache_entry *next;
 };
 
-struct runtime_handle {
+struct py_runtime_handle {
     PyObject *globals;
     char *last_error;
     struct module_cache_entry *module_cache;
@@ -31,8 +31,8 @@ struct runtime_handle {
     int destroying;
 };
 
-struct value_handle {
-    runtime_handle *runtime;
+struct py_value_handle {
+    py_runtime_handle *runtime;
     PyObject *value;
 };
 
@@ -49,7 +49,7 @@ static char *copy_string(const char *value) {
     return copy;
 }
 
-static void set_error(runtime_handle *runtime, const char *message) {
+static void set_error(py_runtime_handle *runtime, const char *message) {
     if (runtime == NULL) {
         return;
     }
@@ -58,7 +58,7 @@ static void set_error(runtime_handle *runtime, const char *message) {
     runtime->last_error = copy_string(message);
 }
 
-static void clear_error(runtime_handle *runtime) {
+static void clear_error(py_runtime_handle *runtime) {
     if (runtime == NULL) {
         return;
     }
@@ -67,7 +67,7 @@ static void clear_error(runtime_handle *runtime) {
     runtime->last_error = NULL;
 }
 
-static void capture_exception(runtime_handle *runtime) {
+static void capture_exception(py_runtime_handle *runtime) {
     if (runtime == NULL) {
         PyErr_Clear();
         return;
@@ -102,15 +102,15 @@ static void capture_exception(runtime_handle *runtime) {
     PyErr_Clear();
 }
 
-static int valid_runtime(runtime_handle *runtime) {
+static int valid_runtime(py_runtime_handle *runtime) {
     return runtime != NULL && runtime->globals != NULL;
 }
 
-static int valid_value(value_handle *value) {
+static int valid_value(py_value_handle *value) {
     return value != NULL && valid_runtime(value->runtime) && value->value != NULL;
 }
 
-static void free_module_cache(runtime_handle *runtime) {
+static void free_module_cache(py_runtime_handle *runtime) {
     struct module_cache_entry *entry = runtime == NULL ? NULL : runtime->module_cache;
     while (entry != NULL) {
         struct module_cache_entry *next = entry->next;
@@ -124,7 +124,7 @@ static void free_module_cache(runtime_handle *runtime) {
     }
 }
 
-static void free_runtime(runtime_handle *runtime) {
+static void free_runtime(py_runtime_handle *runtime) {
     if (runtime == NULL) {
         return;
     }
@@ -135,19 +135,19 @@ static void free_runtime(runtime_handle *runtime) {
     free(runtime);
 }
 
-static void free_runtime_if_ready(runtime_handle *runtime) {
+static void free_runtime_if_ready(py_runtime_handle *runtime) {
     if (runtime != NULL && runtime->destroying && runtime->value_count == 0) {
         free_runtime(runtime);
     }
 }
 
-static value_handle *new_value_handle(runtime_handle *runtime, PyObject *value) {
+static py_value_handle *new_value_handle(py_runtime_handle *runtime, PyObject *value) {
     if (!valid_runtime(runtime) || value == NULL) {
         Py_XDECREF(value);
         return NULL;
     }
 
-    value_handle *handle = (value_handle *)calloc(1, sizeof(value_handle));
+    py_value_handle *handle = (py_value_handle *)calloc(1, sizeof(py_value_handle));
     if (handle == NULL) {
         Py_DECREF(value);
         set_error(runtime, "failed to allocate Python value handle");
@@ -170,7 +170,7 @@ static int string_ends_with(const char *value, const char *suffix) {
     return value_len >= suffix_len && strcmp(value + value_len - suffix_len, suffix) == 0;
 }
 
-static struct module_cache_entry *find_cached_module(runtime_handle *runtime, const char *path) {
+static struct module_cache_entry *find_cached_module(py_runtime_handle *runtime, const char *path) {
     for (struct module_cache_entry *entry = runtime->module_cache; entry != NULL; entry = entry->next) {
         if (strcmp(entry->path, path) == 0) {
             return entry;
@@ -191,7 +191,7 @@ static char *module_name_for_path(const char *path) {
     return copy_string(buffer);
 }
 
-static int cache_module(runtime_handle *runtime, const char *path, PyObject *module) {
+static int cache_module(py_runtime_handle *runtime, const char *path, PyObject *module) {
     struct module_cache_entry *entry = (struct module_cache_entry *)calloc(1, sizeof(struct module_cache_entry));
     if (entry == NULL) {
         set_error(runtime, "failed to allocate Python module cache entry");
@@ -212,7 +212,7 @@ static int cache_module(runtime_handle *runtime, const char *path, PyObject *mod
     return 0;
 }
 
-static int install_global_helpers(runtime_handle *runtime) {
+static int install_global_helpers(py_runtime_handle *runtime) {
     static const char *helper_source =
         "class _CangjieInteropObject:\n"
         "    @staticmethod\n"
@@ -236,13 +236,13 @@ static int install_global_helpers(runtime_handle *runtime) {
     return 0;
 }
 
-runtime_handle *runtime_create(void) {
+py_runtime_handle *py_runtime_create(void) {
     if (!Py_IsInitialized()) {
         Py_Initialize();
     }
 
     PyGILState_STATE gil = PyGILState_Ensure();
-    runtime_handle *handle = (runtime_handle *)calloc(1, sizeof(runtime_handle));
+    py_runtime_handle *handle = (py_runtime_handle *)calloc(1, sizeof(py_runtime_handle));
     if (handle == NULL) {
         PyGILState_Release(gil);
         return NULL;
@@ -268,7 +268,7 @@ runtime_handle *runtime_create(void) {
     return handle;
 }
 
-void runtime_destroy(runtime_handle *handle) {
+void py_runtime_destroy(py_runtime_handle *handle) {
     if (handle == NULL) {
         return;
     }
@@ -279,11 +279,11 @@ void runtime_destroy(runtime_handle *handle) {
     PyGILState_Release(gil);
 }
 
-const char *runtime_last_error(runtime_handle *handle) {
+const char *py_runtime_last_error(py_runtime_handle *handle) {
     return handle == NULL || handle->last_error == NULL ? "" : handle->last_error;
 }
 
-int64_t runtime_enable_std_module(runtime_handle *handle) {
+int64_t py_runtime_enable_std_module(py_runtime_handle *handle) {
     if (!valid_runtime(handle)) {
         return 1;
     }
@@ -291,7 +291,7 @@ int64_t runtime_enable_std_module(runtime_handle *handle) {
     return 0;
 }
 
-value_handle *runtime_eval_value(runtime_handle *handle, const char *source) {
+py_value_handle *py_runtime_eval_value(py_runtime_handle *handle, const char *source) {
     if (!valid_runtime(handle) || source == NULL) {
         return NULL;
     }
@@ -324,12 +324,12 @@ value_handle *runtime_eval_value(runtime_handle *handle, const char *source) {
         return NULL;
     }
 
-    value_handle *value = new_value_handle(handle, result);
+    py_value_handle *value = new_value_handle(handle, result);
     PyGILState_Release(gil);
     return value;
 }
 
-value_handle *runtime_get_global_property(runtime_handle *handle, const char *name) {
+py_value_handle *py_runtime_get_global_property(py_runtime_handle *handle, const char *name) {
     if (!valid_runtime(handle) || name == NULL) {
         return NULL;
     }
@@ -345,12 +345,12 @@ value_handle *runtime_get_global_property(runtime_handle *handle, const char *na
     }
 
     Py_INCREF(value);
-    value_handle *result = new_value_handle(handle, value);
+    py_value_handle *result = new_value_handle(handle, value);
     PyGILState_Release(gil);
     return result;
 }
 
-value_handle *runtime_new_bool(runtime_handle *handle, int64_t value) {
+py_value_handle *py_runtime_new_bool(py_runtime_handle *handle, int64_t value) {
     if (!valid_runtime(handle)) {
         return NULL;
     }
@@ -358,12 +358,12 @@ value_handle *runtime_new_bool(runtime_handle *handle, int64_t value) {
     PyGILState_STATE gil = PyGILState_Ensure();
     clear_error(handle);
     PyObject *object = PyBool_FromLong(value != 0);
-    value_handle *result = new_value_handle(handle, object);
+    py_value_handle *result = new_value_handle(handle, object);
     PyGILState_Release(gil);
     return result;
 }
 
-value_handle *runtime_new_number(runtime_handle *handle, double value) {
+py_value_handle *py_runtime_new_number(py_runtime_handle *handle, double value) {
     if (!valid_runtime(handle)) {
         return NULL;
     }
@@ -376,12 +376,12 @@ value_handle *runtime_new_number(runtime_handle *handle, double value) {
         PyGILState_Release(gil);
         return NULL;
     }
-    value_handle *result = new_value_handle(handle, object);
+    py_value_handle *result = new_value_handle(handle, object);
     PyGILState_Release(gil);
     return result;
 }
 
-value_handle *runtime_new_integer(runtime_handle *handle, const char *value) {
+py_value_handle *py_runtime_new_integer(py_runtime_handle *handle, const char *value) {
     if (!valid_runtime(handle) || value == NULL) {
         return NULL;
     }
@@ -394,12 +394,12 @@ value_handle *runtime_new_integer(runtime_handle *handle, const char *value) {
         PyGILState_Release(gil);
         return NULL;
     }
-    value_handle *result = new_value_handle(handle, object);
+    py_value_handle *result = new_value_handle(handle, object);
     PyGILState_Release(gil);
     return result;
 }
 
-value_handle *runtime_new_string(runtime_handle *handle, const char *value) {
+py_value_handle *py_runtime_new_string(py_runtime_handle *handle, const char *value) {
     if (!valid_runtime(handle) || value == NULL) {
         return NULL;
     }
@@ -412,12 +412,12 @@ value_handle *runtime_new_string(runtime_handle *handle, const char *value) {
         PyGILState_Release(gil);
         return NULL;
     }
-    value_handle *result = new_value_handle(handle, object);
+    py_value_handle *result = new_value_handle(handle, object);
     PyGILState_Release(gil);
     return result;
 }
 
-static value_handle *runtime_import_file(runtime_handle *handle, const char *path) {
+static py_value_handle *runtime_import_file(py_runtime_handle *handle, const char *path) {
     char resolved_path[PATH_MAX];
     if (realpath(path, resolved_path) == NULL) {
         set_error(handle, "failed to read Python module file");
@@ -529,7 +529,7 @@ fail:
     return NULL;
 }
 
-value_handle *runtime_import_module(runtime_handle *handle, const char *path_or_name) {
+py_value_handle *py_runtime_import_module(py_runtime_handle *handle, const char *path_or_name) {
     if (!valid_runtime(handle) || path_or_name == NULL) {
         return NULL;
     }
@@ -537,7 +537,7 @@ value_handle *runtime_import_module(runtime_handle *handle, const char *path_or_
     PyGILState_STATE gil = PyGILState_Ensure();
     clear_error(handle);
 
-    value_handle *result = NULL;
+    py_value_handle *result = NULL;
     if (string_ends_with(path_or_name, ".py")) {
         result = runtime_import_file(handle, path_or_name);
     } else {
@@ -553,13 +553,13 @@ value_handle *runtime_import_module(runtime_handle *handle, const char *path_or_
     return result;
 }
 
-void value_destroy(value_handle *handle) {
+void py_value_destroy(py_value_handle *handle) {
     if (handle == NULL) {
         return;
     }
 
     PyGILState_STATE gil = PyGILState_Ensure();
-    runtime_handle *runtime = handle->runtime;
+    py_runtime_handle *runtime = handle->runtime;
     Py_XDECREF(handle->value);
     free(handle);
     if (runtime != NULL) {
@@ -571,7 +571,7 @@ void value_destroy(value_handle *handle) {
     PyGILState_Release(gil);
 }
 
-int64_t value_kind(value_handle *handle) {
+int64_t py_value_kind(py_value_handle *handle) {
     if (!valid_value(handle)) {
         return PYTHON_VALUE_NULL;
     }
@@ -596,7 +596,7 @@ int64_t value_kind(value_handle *handle) {
     return kind;
 }
 
-int64_t value_to_bool(value_handle *handle) {
+int64_t py_value_to_bool(py_value_handle *handle) {
     if (!valid_value(handle)) {
         return 0;
     }
@@ -611,7 +611,7 @@ int64_t value_to_bool(value_handle *handle) {
     return truth != 0;
 }
 
-double value_to_number(value_handle *handle) {
+double py_value_to_number(py_value_handle *handle) {
     if (!valid_value(handle)) {
         return 0.0;
     }
@@ -626,7 +626,7 @@ double value_to_number(value_handle *handle) {
     return number;
 }
 
-const char *value_to_string(value_handle *handle) {
+const char *py_value_to_string(py_value_handle *handle) {
     if (!valid_value(handle)) {
         return copy_string("");
     }
@@ -646,11 +646,11 @@ const char *value_to_string(value_handle *handle) {
     return copy;
 }
 
-void bridge_free_string(const char *value) {
+void py_bridge_free_string(const char *value) {
     free((void *)value);
 }
 
-int64_t value_is_array(value_handle *handle) {
+int64_t py_value_is_array(py_value_handle *handle) {
     if (!valid_value(handle)) {
         return 0;
     }
@@ -661,7 +661,7 @@ int64_t value_is_array(value_handle *handle) {
     return is_array;
 }
 
-int64_t value_array_length(value_handle *handle) {
+int64_t py_value_array_length(py_value_handle *handle) {
     if (!valid_value(handle)) {
         return 0;
     }
@@ -676,7 +676,7 @@ int64_t value_array_length(value_handle *handle) {
     return (int64_t)size;
 }
 
-static PyObject *length_property(runtime_handle *runtime, PyObject *value) {
+static PyObject *length_property(py_runtime_handle *runtime, PyObject *value) {
     Py_ssize_t size = -1;
     if (PyList_Check(value) || PyTuple_Check(value) || PyDict_Check(value)) {
         size = PyObject_Length(value);
@@ -692,7 +692,7 @@ static PyObject *length_property(runtime_handle *runtime, PyObject *value) {
     return PyLong_FromSsize_t(size);
 }
 
-value_handle *value_get_property(value_handle *handle, const char *name) {
+py_value_handle *py_value_get_property(py_value_handle *handle, const char *name) {
     if (!valid_value(handle) || name == NULL) {
         return NULL;
     }
@@ -704,7 +704,7 @@ value_handle *value_get_property(value_handle *handle, const char *name) {
     if (strcmp(name, "length") == 0) {
         result = length_property(handle->runtime, handle->value);
         if (result != NULL) {
-            value_handle *value = new_value_handle(handle->runtime, result);
+            py_value_handle *value = new_value_handle(handle->runtime, result);
             PyGILState_Release(gil);
             return value;
         }
@@ -729,12 +729,12 @@ value_handle *value_get_property(value_handle *handle, const char *name) {
         }
     }
 
-    value_handle *value = new_value_handle(handle->runtime, result);
+    py_value_handle *value = new_value_handle(handle->runtime, result);
     PyGILState_Release(gil);
     return value;
 }
 
-int64_t value_set_property(value_handle *handle, const char *name, value_handle *value) {
+int64_t py_value_set_property(py_value_handle *handle, const char *name, py_value_handle *value) {
     if (!valid_value(handle) || !valid_value(value) || name == NULL) {
         return 1;
     }
@@ -763,7 +763,7 @@ int64_t value_set_property(value_handle *handle, const char *name, value_handle 
     return status == 0 ? 0 : 1;
 }
 
-value_handle *value_get_index(value_handle *handle, int64_t index) {
+py_value_handle *py_value_get_index(py_value_handle *handle, int64_t index) {
     if (!valid_value(handle)) {
         return NULL;
     }
@@ -786,12 +786,12 @@ value_handle *value_get_index(value_handle *handle, int64_t index) {
         return NULL;
     }
 
-    value_handle *value = new_value_handle(handle->runtime, result);
+    py_value_handle *value = new_value_handle(handle->runtime, result);
     PyGILState_Release(gil);
     return value;
 }
 
-int64_t value_set_index(value_handle *handle, int64_t index, value_handle *value) {
+int64_t py_value_set_index(py_value_handle *handle, int64_t index, py_value_handle *value) {
     if (!valid_value(handle) || !valid_value(value)) {
         return 1;
     }
@@ -816,7 +816,7 @@ int64_t value_set_index(value_handle *handle, int64_t index, value_handle *value
     return status == 0 ? 0 : 1;
 }
 
-value_handle *value_call(value_handle *function, value_handle *this_value, value_handle **args, int num_args) {
+py_value_handle *py_value_call(py_value_handle *function, py_value_handle *this_value, py_value_handle **args, int num_args) {
     (void)this_value;
     if (!valid_value(function) || num_args < 0) {
         return NULL;
@@ -857,11 +857,11 @@ value_handle *value_call(value_handle *function, value_handle *this_value, value
         return NULL;
     }
 
-    value_handle *value = new_value_handle(function->runtime, result);
+    py_value_handle *value = new_value_handle(function->runtime, result);
     PyGILState_Release(gil);
     return value;
 }
 
-value_handle *value_construct(value_handle *constructor, value_handle **args, int num_args) {
-    return value_call(constructor, NULL, args, num_args);
+py_value_handle *py_value_construct(py_value_handle *constructor, py_value_handle **args, int num_args) {
+    return py_value_call(constructor, NULL, args, num_args);
 }
