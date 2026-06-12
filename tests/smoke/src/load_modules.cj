@@ -32,11 +32,11 @@ func runLoadModulesSmoke(): Int64 {
         return 3
     }
 
-    let marker: Extern<PythonRuntime> = PythonRuntime.memberAccess(module, "moduleMarker")
-    let cachedModule: Extern<PythonRuntime> = PythonRuntime.getModule("py_examples/ok/shape_module.py")
-    let cachedMarker: Extern<PythonRuntime> = PythonRuntime.memberAccess(cachedModule, "moduleMarker")
-    if (PythonRuntime.fromExtern<Float64>(marker) != PythonRuntime.fromExtern<Float64>(cachedMarker)) {
-        println("module cache did not preserve evaluated namespace")
+    PythonRuntime.memberUpdate(module, "moduleSentinel", 0.0)
+    let freshModule: Extern<PythonRuntime> = PythonRuntime.getModule("py_examples/ok/shape_module.py")
+    let freshSentinel: Extern<PythonRuntime> = PythonRuntime.memberAccess(freshModule, "moduleSentinel")
+    if (PythonRuntime.fromExtern<Float64>(freshSentinel) != 42.4242) {
+        println("module import reused mutated namespace state")
         return 4
     }
 

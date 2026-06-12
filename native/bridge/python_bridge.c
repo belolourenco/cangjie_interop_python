@@ -17,16 +17,9 @@ enum {
     PYTHON_VALUE_CALLABLE,
 };
 
-struct module_cache_entry {
-    char *path;
-    PyObject *module;
-    struct module_cache_entry *next;
-};
-
 struct py_runtime_handle {
     PyObject *globals;
     char *last_error;
-    struct module_cache_entry *module_cache;
     size_t value_count;
     int destroying;
 };
@@ -110,26 +103,11 @@ static int valid_value(py_value_handle *value) {
     return value != NULL && valid_runtime(value->runtime) && value->value != NULL;
 }
 
-static void free_module_cache(py_runtime_handle *runtime) {
-    struct module_cache_entry *entry = runtime == NULL ? NULL : runtime->module_cache;
-    while (entry != NULL) {
-        struct module_cache_entry *next = entry->next;
-        Py_XDECREF(entry->module);
-        free(entry->path);
-        free(entry);
-        entry = next;
-    }
-    if (runtime != NULL) {
-        runtime->module_cache = NULL;
-    }
-}
-
 static void free_runtime(py_runtime_handle *runtime) {
     if (runtime == NULL) {
         return;
     }
 
-    free_module_cache(runtime);
     Py_XDECREF(runtime->globals);
     free(runtime->last_error);
     free(runtime);
@@ -170,15 +148,6 @@ static int string_ends_with(const char *value, const char *suffix) {
     return value_len >= suffix_len && strcmp(value + value_len - suffix_len, suffix) == 0;
 }
 
-static struct module_cache_entry *find_cached_module(py_runtime_handle *runtime, const char *path) {
-    for (struct module_cache_entry *entry = runtime->module_cache; entry != NULL; entry = entry->next) {
-        if (strcmp(entry->path, path) == 0) {
-            return entry;
-        }
-    }
-    return NULL;
-}
-
 static char *module_name_for_path(const char *path) {
     unsigned long hash = 1469598103934665603UL;
     for (const unsigned char *p = (const unsigned char *)path; *p != '\0'; p++) {
@@ -189,27 +158,6 @@ static char *module_name_for_path(const char *path) {
     char buffer[96];
     snprintf(buffer, sizeof(buffer), "_cangjie_interop_python_%lx", hash);
     return copy_string(buffer);
-}
-
-static int cache_module(py_runtime_handle *runtime, const char *path, PyObject *module) {
-    struct module_cache_entry *entry = (struct module_cache_entry *)calloc(1, sizeof(struct module_cache_entry));
-    if (entry == NULL) {
-        set_error(runtime, "failed to allocate Python module cache entry");
-        return -1;
-    }
-
-    entry->path = copy_string(path);
-    if (entry->path == NULL) {
-        free(entry);
-        set_error(runtime, "failed to allocate Python module cache path");
-        return -1;
-    }
-
-    Py_INCREF(module);
-    entry->module = module;
-    entry->next = runtime->module_cache;
-    runtime->module_cache = entry;
-    return 0;
 }
 
 static int install_global_helpers(py_runtime_handle *runtime) {
@@ -424,12 +372,6 @@ static py_value_handle *runtime_import_file(py_runtime_handle *handle, const cha
         return NULL;
     }
 
-    struct module_cache_entry *cached = find_cached_module(handle, resolved_path);
-    if (cached != NULL) {
-        Py_INCREF(cached->module);
-        return new_value_handle(handle, cached->module);
-    }
-
     char *module_name = module_name_for_path(resolved_path);
     if (module_name == NULL) {
         set_error(handle, "failed to allocate Python module name");
@@ -503,10 +445,6 @@ static py_value_handle *runtime_import_file(py_runtime_handle *handle, const cha
 
     Py_DECREF(result);
     result = NULL;
-
-    if (cache_module(handle, resolved_path, module) != 0) {
-        goto fail;
-    }
 
     free(module_name);
     Py_XDECREF(exec_module);

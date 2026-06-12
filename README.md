@@ -52,4 +52,4 @@ The test packages link against `libpython_bridge` and the local CPython embed li
 - CPython is initialized once per process and intentionally not finalized during ordinary runtime destruction.
 - Every bridge entrypoint acquires the GIL before touching Python objects.
 - Returned `Extern<PythonRuntime>` values own strong Python references until the Cangjie wrapper is destroyed.
-- File-based module imports are cached by absolute path.
+- File-based module imports execute the file again for each `PythonRuntime.getModule(path)` call.

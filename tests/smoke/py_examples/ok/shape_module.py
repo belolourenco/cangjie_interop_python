@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 
 moduleMarker = random.random()
+moduleSentinel = 42.4242
 
 
 def lookup(lat, long):
