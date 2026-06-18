@@ -6,7 +6,7 @@
   target-dir = ""
   output-type = "executable"
   compile-option = "--set-runtime-rpath"
-  link-option = "-L ../../build/native -lpython_bridge -lpython3.12 -ldl"
+  link-option = "-L ../../build/native -lpython_bridge ${PYTHON_LDFLAGS}"
   package-configuration = {}
 
 [dependencies]

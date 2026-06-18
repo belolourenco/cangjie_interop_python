@@ -22,6 +22,8 @@ EXTERN_WITH_MODULES_1_DIR := tests/extern_with_modules_1
 EXTERN_WITH_MODULES_2_DIR := tests/extern_with_modules_2
 
 PYTHON_CFLAGS ?= $(shell $(PYTHON_CONFIG) --includes)
+PYTHON_LDFLAGS ?= $(shell $(PYTHON_CONFIG) --ldflags --embed 2>/dev/null || $(PYTHON_CONFIG) --ldflags)
+export PYTHON_LDFLAGS
 COMMON_CFLAGS := -std=c11 -O2 -g -Wall -Wextra -Wno-unused-parameter
 COMMON_CFLAGS += -Wno-missing-field-initializers -fwrapv -funsigned-char -D_GNU_SOURCE
 COMMON_CFLAGS += $(PYTHON_CFLAGS)
