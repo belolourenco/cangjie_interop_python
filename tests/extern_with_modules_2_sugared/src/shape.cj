@@ -7,10 +7,7 @@ public class Point {
 
     public init(module: Extern<PythonRuntime>, x: Float64, y: Float64) {
         println("Point constructor called with x: ${x}, y: ${y}")
-        // blob = module.Point(x, y)
-        // ->
-        let pointConstructor: Extern<PythonRuntime> = module.Point
-        blob = PythonRuntime.functionCall(pointConstructor, [x, y])
+        blob = module.Point(x, y)
     }
 
     // Shallow copy constructor!
@@ -22,10 +19,7 @@ public class Point {
     // Deep copy constructor!
     public init(module: Extern<PythonRuntime>, other: Point) {
         println("Point copy constructor called with x: ${other.x}, y: ${other.y}")
-        // blob = module.Point(other.x, other.y)
-        // ->
-        let pointConstructor: Extern<PythonRuntime> = module.Point
-        blob = PythonRuntime.functionCall(pointConstructor, [other.x, other.y])
+        blob = module.Point(other.x, other.y)
     }
 
     public mut prop x: Float64 {
@@ -52,10 +46,7 @@ public class Point {
     }
 
     public func distanceTo(other: Point): Float64 {
-        // blob.distanceTo(other.blob)
-        // ->
-        let distanceToMethod: Extern<PythonRuntime> = blob.distanceTo
-        let result: Extern<PythonRuntime> = PythonRuntime.functionCall(distanceToMethod, [other.blob])
+        let result: Extern<PythonRuntime> = blob.distanceTo(other.blob)
         PythonRuntime.fromExtern<Float64>(result)
     }
 }
@@ -65,26 +56,17 @@ public interface Shape {
     func getBlob(): Extern<PythonRuntime>
 
     func name(): String {
-        // getBlob().name()
-        // ->
-        let nameMethod: Extern<PythonRuntime> = getBlob().name
-        let result: Extern<PythonRuntime> = PythonRuntime.functionCall(nameMethod, [])
+        let result: Extern<PythonRuntime> = getBlob().name()
         PythonRuntime.fromExtern<String>(result)
     }
 
     func area(): Float64 {
-        // getBlob().area()
-        // ->
-        let areaMethod: Extern<PythonRuntime> = getBlob().area
-        let result: Extern<PythonRuntime> = PythonRuntime.functionCall(areaMethod, [])
+        let result: Extern<PythonRuntime> = getBlob().area()
         PythonRuntime.fromExtern<Float64>(result)
     }
 
     func perimeter(): Float64 {
-        // getBlob().perimeter()
-        // ->
-        let perimeterMethod: Extern<PythonRuntime> = getBlob().perimeter
-        let result: Extern<PythonRuntime> = PythonRuntime.functionCall(perimeterMethod, [])
+        let result: Extern<PythonRuntime> = getBlob().perimeter()
         PythonRuntime.fromExtern<Float64>(result)
     }
 }
@@ -94,10 +76,7 @@ public class Rectangle <: Shape {
 
     public init(module: Extern<PythonRuntime>, topLeft: Point, bottomRight: Point) {
         println("Rectangle constructor called with topLeft: ${topLeft.x}, ${topLeft.y} and bottomRight: ${bottomRight.x}, ${bottomRight.y}")
-        // blob = module.Rectangle(topLeft.blob, bottomRight.blob)
-        // ->
-        let rectangleConstructor: Extern<PythonRuntime> = module.Rectangle
-        blob = PythonRuntime.functionCall(rectangleConstructor, [topLeft.blob, bottomRight.blob])
+        blob = module.Rectangle(topLeft.blob, bottomRight.blob)
     }
 
     public init(extern: Extern<PythonRuntime>) {
@@ -158,10 +137,7 @@ public class Circle <: Shape {
     public let blob: Extern<PythonRuntime>
 
     public init(module: Extern<PythonRuntime>, center: Point, radius: Float64) {
-        // blob = module.Circle(center.blob, radius)
-        // ->
-        let circleConstructor: Extern<PythonRuntime> = module.Circle
-        blob = PythonRuntime.functionCall(circleConstructor, [center.blob, radius])
+        blob = module.Circle(center.blob, radius)
     }
 
     public init(extern: Extern<PythonRuntime>) {
@@ -198,10 +174,7 @@ public class Triangle <: Shape {
     public let blob: Extern<PythonRuntime>
 
     public init(module: Extern<PythonRuntime>, a: Point, b: Point, c: Point) {
-        // blob = module.Triangle(a.blob, b.blob, c.blob)
-        // ->
-        let triangleConstructor: Extern<PythonRuntime> = module.Triangle
-        blob = PythonRuntime.functionCall(triangleConstructor, [a.blob, b.blob, c.blob])
+        blob = module.Triangle(a.blob, b.blob, c.blob)
     }
 
     public init(extern: Extern<PythonRuntime>) {
