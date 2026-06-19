@@ -277,6 +277,6 @@ func convertArrayToArrayList<T>(array: Extern<PythonRuntime>): ArrayList<T> {
         // TODO
         // PythonRuntime.fromExtern<T>(array[i])
         // ->
-        PythonRuntime.fromExtern<T>(PythonRuntime.indexAccess(array, i))
+        PythonRuntime.fromExtern<T>(array[i])
     })
 }
