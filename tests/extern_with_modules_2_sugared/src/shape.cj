@@ -24,9 +24,7 @@ public class Point {
 
     public mut prop x: Float64 {
         get() {
-            // (Float64)blob.x
-            let value: Extern<PythonRuntime> = blob.x
-            PythonRuntime.fromExtern<Float64>(value)
+            (Float64)blob.x
         }
         set(value) {
             blob.x = value
@@ -35,10 +33,7 @@ public class Point {
 
     public mut prop y: Float64 {
         get() {
-            // (Float64)blob.y
-            // ->
-            let value: Extern<PythonRuntime> = blob.y
-            PythonRuntime.fromExtern<Float64>(value)
+            (Float64)blob.y
         }
         set(value) {
             blob.y = value
@@ -46,8 +41,7 @@ public class Point {
     }
 
     public func distanceTo(other: Point): Float64 {
-        let result: Extern<PythonRuntime> = blob.distanceTo(other.blob)
-        PythonRuntime.fromExtern<Float64>(result)
+        (Float64)blob.distanceTo(other.blob)
     }
 }
 
@@ -56,18 +50,15 @@ public interface Shape {
     func getBlob(): Extern<PythonRuntime>
 
     func name(): String {
-        let result: Extern<PythonRuntime> = getBlob().name()
-        PythonRuntime.fromExtern<String>(result)
+        (String)getBlob().name()
     }
 
     func area(): Float64 {
-        let result: Extern<PythonRuntime> = getBlob().area()
-        PythonRuntime.fromExtern<Float64>(result)
+        (Float64)getBlob().area()
     }
 
     func perimeter(): Float64 {
-        let result: Extern<PythonRuntime> = getBlob().perimeter()
-        PythonRuntime.fromExtern<Float64>(result)
+        (Float64)getBlob().perimeter()
     }
 }
 
@@ -89,10 +80,7 @@ public class Rectangle <: Shape {
 
     public mut prop topLeft: Point {
         get() {
-            // Point(blob.topLeft)
-            // ->
-            let value: Extern<PythonRuntime> = blob.topLeft
-            Point(value)
+            Point(blob.topLeft)
         }
         set(value) {
             blob.topLeft = value.blob
@@ -110,10 +98,7 @@ public class Rectangle <: Shape {
 
     public mut prop width: Float64 {
         get() {
-            // (Float64)blob.width
-            // ->
-            let value: Extern<PythonRuntime> = blob.width
-            PythonRuntime.fromExtern<Float64>(value)
+            (Float64)blob.width
         }
         set(value) {
             blob.width = value
@@ -122,10 +107,7 @@ public class Rectangle <: Shape {
 
     public mut prop height: Float64 {
         get() {
-            // (Float64)blob.height
-            // ->
-            let value: Extern<PythonRuntime> = blob.height
-            PythonRuntime.fromExtern<Float64>(value)
+            (Float64)blob.height
         }
         set(value) {
             blob.height = value
@@ -159,10 +141,7 @@ public class Circle <: Shape {
 
     public mut prop radius: Float64 {
         get() {
-            // (Float64)blob.radius
-            // ->
-            let value: Extern<PythonRuntime> = blob.radius
-            PythonRuntime.fromExtern<Float64>(value)
+            (Float64)blob.radius
         }
         set(value) {
             blob.radius = value
