@@ -373,7 +373,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
     private static func toPythonValue(value: Any): PythonValueRef {
         match (value) {
             case e: Extern<PythonRuntime> =>
-                externContentToRef(getPayload(e))
+                externContentToRef(Extern<PythonRuntime>.getPayload(e))
             case handle: CPointer<Unit> =>
                 PythonValueRef(handle)
             case i: Int8 =>
@@ -475,7 +475,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
     }
 
     public static func memberAccess(e: Extern<PythonRuntime>, field: String): Extern<PythonRuntime> {
-        match (getPayload(e)) {
+        match (Extern<PythonRuntime>.getPayload(e)) {
             case value: PythonValueRef =>
                 let fieldValue = getProperty(value.pointer(), field)
                 if (valueIsCallable(fieldValue)) {
@@ -488,7 +488,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
     }
 
     public static func functionCall(e: Extern<PythonRuntime>, args: Array<Any>): Extern<PythonRuntime> {
-        match (getPayload(e)) {
+        match (Extern<PythonRuntime>.getPayload(e)) {
             case method: PythonMethodRef =>
                 let pythonArgs = toPythonValues(args)
                 pythonExtern(callValue(method.function, method.receiver, pythonArgs))
@@ -500,7 +500,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
     }
 
     public static func memberUpdate(e: Extern<PythonRuntime>, field: String, value: Any): Unit {
-        match (getPayload(e)) {
+        match (Extern<PythonRuntime>.getPayload(e)) {
             case target: PythonValueRef =>
                 let pythonValue = toPythonValue(value)
                 setProperty(target.pointer(), field, pythonValue.pointer())
@@ -509,7 +509,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
     }
 
     public static func indexAccess(e: Extern<PythonRuntime>, arg: Any): Extern<PythonRuntime> {
-        match (getPayload(e)) {
+        match (Extern<PythonRuntime>.getPayload(e)) {
             case value: PythonValueRef =>
                 match (arg) {
                     case key: String => pythonExtern(getProperty(value.pointer(), key))
@@ -520,7 +520,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
     }
 
     public static func indexUpdate(e: Extern<PythonRuntime>, arg: Any, value: Any): Unit {
-        match (getPayload(e)) {
+        match (Extern<PythonRuntime>.getPayload(e)) {
             case target: PythonValueRef =>
                 match (arg) {
                     case key: String =>
@@ -536,7 +536,7 @@ abstract public class PythonRuntime <: Runtime<PythonRuntime> {
 
     public static func fromExtern<T>(e: Extern<PythonRuntime>): T {
         let dummy: Option<T> = None
-        python2Cangjie(externContentToValue(getPayload(e)), dummy)
+        python2Cangjie(externContentToValue(Extern<PythonRuntime>.getPayload(e)), dummy)
     }
 
     public static func toExtern<T>(value: T): Extern<PythonRuntime> {
