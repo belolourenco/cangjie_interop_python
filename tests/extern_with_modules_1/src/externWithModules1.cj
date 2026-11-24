@@ -37,8 +37,8 @@ public func testExternWithModules1() {
     // println("Lookup coordinates: (${(lookupResult.coordinates[0] as Float64).getOrThrow()}, ${(lookupResult.coordinates[1] as Float64).getOrThrow()})")
     // ->
     let lookup_coordinates: Extern<PythonRuntime> = PythonRuntime.memberAccess(lookupResult, "coordinates")
-    let lookup_coordinates_0: Extern<PythonRuntime> = PythonRuntime.indexAccess(lookup_coordinates, 0)
-    let lookup_coordinates_1: Extern<PythonRuntime> = PythonRuntime.indexAccess(lookup_coordinates, 1)
+    let lookup_coordinates_0: Extern<PythonRuntime> = PythonRuntime.indexedAccess(lookup_coordinates, 0)
+    let lookup_coordinates_1: Extern<PythonRuntime> = PythonRuntime.indexedAccess(lookup_coordinates, 1)
     println("Lookup coordinates: (${PythonRuntime.fromExtern<Float64>(lookup_coordinates_0)}, ${PythonRuntime.fromExtern<Float64>(lookup_coordinates_1)})")
 
     // println("Lookup result: ${lookupResult.name}")
@@ -138,7 +138,7 @@ public func testExternWithModules1() {
 
     // globalArray[1] = 42
     // ->
-    PythonRuntime.indexUpdate(globalArray, 1, 42)
+    PythonRuntime.indexedUpdate(globalArray, 1, 42)
     let arrayElements2: ArrayList<Int64> = convertArrayToArrayList(globalArray)
     println("Global array elements: ${arrayElements2}")
     assert(arrayElements2[0] == 1, "Global array element 0 should be 1")
@@ -148,9 +148,9 @@ public func testExternWithModules1() {
     try {
         // globalArray[-1]
         // ->
-        PythonRuntime.indexAccess(globalArray, -1)
+        PythonRuntime.indexedAccess(globalArray, -1)
         throw AssertionFailedException("Global array element -1 should be out of range")
-    } catch (e: ExternDynamicException) {
+    } catch (e: ExternIndexedAccessException) {
         println("Expected exception: ${e.message}")
     }
 
@@ -158,28 +158,28 @@ public func testExternWithModules1() {
     try {
         // globalArray[-1] = 42
         // ->
-        PythonRuntime.indexUpdate(globalArray, -1, 42)
+        PythonRuntime.indexedUpdate(globalArray, -1, 42)
         throw AssertionFailedException("Global array element 3 should be out of range")
-    } catch (e: ExternDynamicException) {
+    } catch (e: ExternIndexedAccessException) {
         println("Expected exception: ${e.message}")
     }
 
     try {
         // globalArray[3]
         // ->
-        let x = PythonRuntime.indexAccess(globalArray, 3)
+        let x = PythonRuntime.indexedAccess(globalArray, 3)
         println("Global array element 3: ${PythonRuntime.fromExtern<Int64>(x)}")
         throw AssertionFailedException("Global array element 3 should be out of range")
-    } catch (e: ExternDynamicException) {
+    } catch (e: ExternIndexedAccessException) {
         println("Expected exception: ${e.message}")
     }
 
     try {
         // globalArray[3] = 42
         // ->
-        PythonRuntime.indexUpdate(globalArray, 3, 42)
+        PythonRuntime.indexedUpdate(globalArray, 3, 42)
         throw AssertionFailedException("Global array element 3 should be out of range")
-    } catch (e: ExternDynamicException) {
+    } catch (e: ExternIndexedAccessException) {
         println("Expected exception: ${e.message}")
     }
 
@@ -227,7 +227,7 @@ public func testExternWithModules1() {
     // globalObject.values[1] = 42
     // ->
     let globalObjectValues2: Extern<PythonRuntime> = PythonRuntime.memberAccess(globalObject, "values")
-    PythonRuntime.indexUpdate(globalObjectValues2, 1, 42)
+    PythonRuntime.indexedUpdate(globalObjectValues2, 1, 42)
     let globalObjectValuesElements2: ArrayList<Int64> = convertArrayToArrayList(globalObjectValues2)
     println("Global object values elements: ${globalObjectValuesElements2}")
     assert(globalObjectValuesElements2[0] == 10, "Global object values element 0 should be 10")
@@ -305,27 +305,27 @@ public func testExternWithModules1() {
 
     // globalStringNumberMap["two"] = -2
     // ->
-    PythonRuntime.indexUpdate(globalStringNumberMap, "two", -2)
-    let globalStringNumberMapTwo: Extern<PythonRuntime> = PythonRuntime.indexAccess(globalStringNumberMap, "two")
+    PythonRuntime.indexedUpdate(globalStringNumberMap, "two", -2)
+    let globalStringNumberMapTwo: Extern<PythonRuntime> = PythonRuntime.indexedAccess(globalStringNumberMap, "two")
     println("Global string number map two: ${PythonRuntime.fromExtern<Int64>(globalStringNumberMapTwo)}")
     assert(PythonRuntime.fromExtern<Int64>(globalStringNumberMapTwo) == -2, "Global string number map two should be -2")
 
 
     // let globalStringNumberMapOne_again: Extern<PythonRuntime> = module.globalStringNumberMap.one
     // ->
-    let globalStringNumberMapOne_again: Extern<PythonRuntime> = PythonRuntime.indexAccess(PythonRuntime.memberAccess(jsModule, "globalStringNumberMap"), "one")
+    let globalStringNumberMapOne_again: Extern<PythonRuntime> = PythonRuntime.indexedAccess(PythonRuntime.memberAccess(jsModule, "globalStringNumberMap"), "one")
     println("Global string number map one: ${PythonRuntime.fromExtern<Int64>(globalStringNumberMapOne_again)}")
     assert(PythonRuntime.fromExtern<Int64>(globalStringNumberMapOne_again) == -1, "Global string number map one should be -1")
 
     // let globalStringNumberMapTwo_again: Extern<PythonRuntime> = module.globalStringNumberMap["two"]
     // ->
-    let globalStringNumberMapTwo_again: Extern<PythonRuntime> = PythonRuntime.indexAccess(PythonRuntime.memberAccess(jsModule, "globalStringNumberMap"), "two")
+    let globalStringNumberMapTwo_again: Extern<PythonRuntime> = PythonRuntime.indexedAccess(PythonRuntime.memberAccess(jsModule, "globalStringNumberMap"), "two")
     println("Global string number map two: ${PythonRuntime.fromExtern<Int64>(globalStringNumberMapTwo_again)}")
     assert(PythonRuntime.fromExtern<Int64>(globalStringNumberMapTwo_again) == -2, "Global string number map two should be -2")
 
     // let globalStringNumberMapAnswer_again: Extern<PythonRuntime> = module.globalStringNumberMap.answer
     // ->
-    let globalStringNumberMapAnswer_again: Extern<PythonRuntime> = PythonRuntime.indexAccess(PythonRuntime.memberAccess(jsModule, "globalStringNumberMap"), "answer")
+    let globalStringNumberMapAnswer_again: Extern<PythonRuntime> = PythonRuntime.indexedAccess(PythonRuntime.memberAccess(jsModule, "globalStringNumberMap"), "answer")
     println("Global string number map answer: ${PythonRuntime.fromExtern<Int64>(globalStringNumberMapAnswer_again)}")
     assert(PythonRuntime.fromExtern<Int64>(globalStringNumberMapAnswer_again) == 42, "Global string number map answer should be 42")
     
@@ -335,6 +335,6 @@ func convertArrayToArrayList<T>(array: Extern<PythonRuntime>): ArrayList<T> {
     let arrayLength: Extern<PythonRuntime> = PythonRuntime.memberAccess(array, "length")
     let arrayLengthInt64: Int64 = PythonRuntime.fromExtern<Int64>(arrayLength)
     ArrayList<T>(arrayLengthInt64, { i: Int64 => 
-        PythonRuntime.fromExtern<T>(PythonRuntime.indexAccess(array, i))
+        PythonRuntime.fromExtern<T>(PythonRuntime.indexedAccess(array, i))
     })
 }

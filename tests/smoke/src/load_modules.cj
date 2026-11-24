@@ -17,7 +17,7 @@ func runLoadModulesSmoke(): Int64 {
     }
 
     let coordinatesValue: Extern<PythonRuntime> = PythonRuntime.memberAccess(siteValue, "coordinates")
-    let longitude: Extern<PythonRuntime> = PythonRuntime.indexAccess(coordinatesValue, 0)
+    let longitude: Extern<PythonRuntime> = PythonRuntime.indexedAccess(coordinatesValue, 0)
     if (PythonRuntime.fromExtern<Float64>(longitude) != -122.3493) {
         println("module function returned unexpected longitude")
         return 2
@@ -42,11 +42,18 @@ func runLoadModulesSmoke(): Int64 {
 
     try {
         let nonFunction: Extern<PythonRuntime> = PythonRuntime.memberAccess(module, "moduleMarker")
-        let unexpected: Extern<PythonRuntime> = PythonRuntime.functionCall(nonFunction, [])
+        let _ = PythonRuntime.functionCall(nonFunction, [])
         println("module call unexpectedly accepted a non-function")
         return 5
-    } catch (_) {
+    } catch (_: ExternFunctionAccessException) {
         ()
+    }
+
+    let math = PythonRuntime.getModule("math")
+    let input: Extern<PythonRuntime> = 81
+    if (PythonRuntime.fromExtern<Float64>(math.sqrt(input)) != 9.0) {
+        println("standard library module call returned unexpected result")
+        return 6
     }
 
     println("load_modules ok")

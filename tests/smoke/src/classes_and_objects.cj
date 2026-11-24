@@ -19,24 +19,24 @@ func runClassesAndObjectsSmoke(): Int64 {
     }
 
     let coordinatesValue: Extern<PythonRuntime> = PythonRuntime.memberAccess(objectResult, "coordinates")
-    let longitude: Extern<PythonRuntime> = PythonRuntime.indexAccess(coordinatesValue, 0)
+    let longitude: Extern<PythonRuntime> = PythonRuntime.indexedAccess(coordinatesValue, 0)
     if (PythonRuntime.fromExtern<Float64>(longitude) != -122.3493) {
         println("unexpected array element")
         return 3
     }
 
-    PythonRuntime.indexUpdate(coordinatesValue, 0, -123.0)
-    let updatedLongitude: Extern<PythonRuntime> = PythonRuntime.indexAccess(coordinatesValue, 0)
+    PythonRuntime.indexedUpdate(coordinatesValue, 0, -123.0)
+    let updatedLongitude: Extern<PythonRuntime> = PythonRuntime.indexedAccess(coordinatesValue, 0)
     if (PythonRuntime.fromExtern<Float64>(updatedLongitude) != -123.0) {
         println("array index write failed")
         return 4
     }
 
     try {
-        let unexpected: Extern<PythonRuntime> = PythonRuntime.indexAccess(coordinatesValue, 2)
+        let _ = PythonRuntime.indexedAccess(coordinatesValue, 2)
         println("out-of-range array index unexpectedly succeeded")
         return 5
-    } catch (_) {
+    } catch (_: ExternIndexedAccessException) {
         ()
     }
 
@@ -57,6 +57,39 @@ func runClassesAndObjectsSmoke(): Int64 {
         return 7
     }
 
+    checkCompoundAssignments()
+
     println("classes_and_objects ok")
     return 0
+}
+
+private func checkCompoundAssignments(): Unit {
+    var total: Extern<PythonRuntime> = 2
+    total += 3
+
+    let target = PythonRuntime.evalScript("__import__('types').SimpleNamespace(value=7, items=[10])")
+    target.value -= total
+
+    let indexCalls = Box(0)
+    let nextIndex = { =>
+        indexCalls.value += 1
+        0
+    }
+    target.items[nextIndex()] += total
+
+    if (PythonRuntime.fromExtern<Int64>(total) != 5 ||
+        PythonRuntime.fromExtern<Int64>(-total) != -5 ||
+        PythonRuntime.fromExtern<Int64>(target.value) != 2 ||
+        PythonRuntime.fromExtern<Int64>(target.items[0]) != 15 ||
+        indexCalls.value != 1) {
+        throw Exception("dynamic operator or compound assignment failed")
+    }
+
+    let mapping = PythonRuntime.evalScript("{'items': 'item value'}")
+    let key: Extern<PythonRuntime> = "items"
+    let item = mapping[key]
+    mapping.items()
+    if (PythonRuntime.fromExtern<String>(item) != "item value") {
+        throw Exception("Python item access failed")
+    }
 }

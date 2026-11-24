@@ -52,8 +52,15 @@ func runPrimitiveTypesSmoke(): Int64 {
         PythonRuntime.fromExtern<Float64>(boolValue)
         println("boolean converted to number unexpectedly")
         return 8
-    } catch (_) {
+    } catch (_: ExternConversionException) {
         ()
+    }
+
+    let embeddedNull = PythonRuntime.evalScript("'a\\x00b'")
+    let textWithNull = PythonRuntime.fromExtern<String>(embeddedNull)
+    if (textWithNull.size != 3 || PythonRuntime.fromExtern<String>(PythonRuntime.toExtern(textWithNull)) != textWithNull) {
+        println("string conversion lost bytes after an embedded NUL")
+        return 9
     }
 
     println("primitive_types ok")
